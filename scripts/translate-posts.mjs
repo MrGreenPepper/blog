@@ -104,7 +104,15 @@ async function syncLanguage(lang, srcDir, destDirFor, { withDates }) {
 		if (existingHash === sourceHash) continue;
 
 		console.log(`Translating ${srcDir}/${file} -> ${lang.code}...`);
-		const translated = await translate(lang.name, parsed.data.title, parsed.data.description, parsed.content);
+		let translated;
+		try {
+			translated = await translate(lang.name, parsed.data.title, parsed.data.description, parsed.content);
+		} catch (err) {
+			// A translation failure (billing, rate limit, a flaky response) must
+			// never take the whole site down with it — skip this file and move on.
+			console.error(`Skipping ${srcDir}/${file} -> ${lang.code}: ${err.message}`);
+			continue;
+		}
 
 		const frontmatter = {
 			title: translated.title,
@@ -136,14 +144,19 @@ async function main() {
 
 	let changed = false;
 	for (const lang of LANGUAGES) {
-		changed = (await syncLanguage(lang, 'src/content/blog', (c) => `src/content/blog-${c}`, { withDates: true })) || changed;
-		changed = (await syncLanguage(lang, 'src/content/pages', (c) => `src/content/pages-${c}`, { withDates: false })) || changed;
+		try {
+			changed = (await syncLanguage(lang, 'src/content/blog', (c) => `src/content/blog-${c}`, { withDates: true })) || changed;
+			changed = (await syncLanguage(lang, 'src/content/pages', (c) => `src/content/pages-${c}`, { withDates: false })) || changed;
+		} catch (err) {
+			console.error(`Skipping ${lang.code} entirely: ${err.message}`);
+		}
 	}
 
 	console.log(changed ? 'Translations updated.' : 'Translations already up to date.');
 }
 
+// Translation is best-effort: a failure here must never block the build/deploy
+// that follows, so this always exits 0 — errors are logged, not fatal.
 main().catch((err) => {
 	console.error(err);
-	process.exit(1);
 });
