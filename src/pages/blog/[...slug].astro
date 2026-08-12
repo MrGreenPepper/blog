@@ -1,6 +1,5 @@
 ---
 import { render } from 'astro:content';
-import LangSwitch from '../../components/LangSwitch.astro';
 import BlogPost from '../../layouts/BlogPost.astro';
 import { LANGUAGES } from '../../utils/i18n';
 import { getPublishedPosts, getTranslatedPosts, type PublishedPost } from '../../utils/posts';
@@ -18,17 +17,15 @@ type Props = PublishedPost;
 const post = Astro.props;
 const { Content } = await render(post);
 
-const hrefs: Record<string, string> = { de: withBase(`blog/${post.id}/`) };
+const translationHrefs: Record<string, string> = { de: withBase(`blog/${post.id}/`) };
 for (const language of LANGUAGES) {
 	const translated = await getTranslatedPosts(language.blog);
 	if (translated.some((p) => p.id === post.id)) {
-		hrefs[language.code] = withBase(`blog/${language.code}/${post.id}/`);
+		translationHrefs[language.code] = withBase(`blog/${language.code}/${post.id}/`);
 	}
 }
-const hasTranslations = Object.keys(hrefs).length > 1;
 ---
 
-<BlogPost {...post.data} lang="de">
-	{hasTranslations && <LangSwitch current="de" hrefs={hrefs} />}
+<BlogPost {...post.data} lang="de" translationHrefs={translationHrefs}>
 	<Content />
 </BlogPost>

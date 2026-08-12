@@ -1,16 +1,27 @@
 ---
 import { SITE_TITLE } from '../consts';
-import { currentLangFromPath, LANGUAGES } from '../utils/i18n';
+import { currentLangFromPath, LANGUAGES, type LangCode } from '../utils/i18n';
 import { withBase } from '../utils/url';
 import HeaderLink from './HeaderLink.astro';
 import LangSwitch from './LangSwitch.astro';
 import ThemeToggle from './ThemeToggle.astro';
+
+interface Props {
+	// Where each language's flag should point on *this* page — e.g. the
+	// translated version of the post/page being viewed. Falls back to that
+	// language's blog listing for any language not included here, so the
+	// switcher always has somewhere sensible to go.
+	translationHrefs?: Partial<Record<LangCode | 'de', string>>;
+}
+
+const { translationHrefs = {} } = Astro.props;
 
 const basePrefix = withBase('blog');
 const current = currentLangFromPath(Astro.url.pathname, basePrefix);
 const hrefs = {
 	de: withBase('blog'),
 	...Object.fromEntries(LANGUAGES.map((l) => [l.code, withBase(`blog/${l.code}`)])),
+	...translationHrefs,
 };
 ---
 

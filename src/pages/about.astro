@@ -1,6 +1,5 @@
 ---
 import { getEntry, render } from 'astro:content';
-import LangSwitch from '../components/LangSwitch.astro';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
@@ -12,12 +11,11 @@ if (!entry) throw new Error('Missing src/content/pages/about.md');
 const { title, description } = entry.data;
 const { Content } = await render(entry);
 
-const hrefs: Record<string, string> = { de: withBase('about') };
+const translationHrefs: Record<string, string> = { de: withBase('about') };
 for (const language of LANGUAGES) {
 	const translated = await getEntry(language.pages, 'about');
-	if (translated) hrefs[language.code] = withBase(`blog/${language.code}/about`);
+	if (translated) translationHrefs[language.code] = withBase(`blog/${language.code}/about`);
 }
-const hasTranslations = Object.keys(hrefs).length > 1;
 ---
 
 <!doctype html>
@@ -26,10 +24,9 @@ const hasTranslations = Object.keys(hrefs).length > 1;
 		<BaseHead title={title} description={description} />
 	</head>
 	<body>
-		<Header />
+		<Header translationHrefs={translationHrefs} />
 		<main>
 			<h1>{title}</h1>
-			{hasTranslations && <LangSwitch current="de" hrefs={hrefs} />}
 			<Content />
 		</main>
 		<Footer />

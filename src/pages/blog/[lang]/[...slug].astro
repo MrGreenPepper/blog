@@ -1,6 +1,5 @@
 ---
 import { render } from 'astro:content';
-import LangSwitch from '../../../components/LangSwitch.astro';
 import BlogPost from '../../../layouts/BlogPost.astro';
 import { LANGUAGES } from '../../../utils/i18n';
 import { getTranslatedPosts } from '../../../utils/posts';
@@ -21,7 +20,7 @@ const { post, language } = Astro.props;
 const { Content } = await render(post);
 
 // Which languages (including German) have a translation of this exact post
-const hrefs: Record<string, string> = {
+const translationHrefs: Record<string, string> = {
 	de: withBase(`blog/${post.id}/`),
 	[language.code]: withBase(`blog/${language.code}/${post.id}/`),
 };
@@ -29,14 +28,13 @@ for (const other of LANGUAGES) {
 	if (other.code === language.code) continue;
 	const others = await getTranslatedPosts(other.blog);
 	if (others.some((p) => p.id === post.id)) {
-		hrefs[other.code] = withBase(`blog/${other.code}/${post.id}/`);
+		translationHrefs[other.code] = withBase(`blog/${other.code}/${post.id}/`);
 	}
 }
 ---
 
-<BlogPost {...post.data} lang={language.code} dir={language.dir}>
+<BlogPost {...post.data} lang={language.code} dir={language.dir} translationHrefs={translationHrefs}>
 	<p class="translation-notice">Machine-translated from German.</p>
-	<LangSwitch current={language.code} hrefs={hrefs} />
 	<Content />
 </BlogPost>
 
