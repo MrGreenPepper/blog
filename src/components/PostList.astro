@@ -1,0 +1,49 @@
+---
+import FormattedDate from './FormattedDate.astro';
+import { withBase } from '../utils/url';
+
+interface Props {
+	posts: { id: string; data: { title: string; pubDate: Date } }[];
+	basePath: string;
+}
+
+const { posts, basePath } = Astro.props;
+---
+
+<ul>
+	{
+		posts.map((post) => (
+			<li>
+				<a href={withBase(`${basePath}/${post.id}/`)}>{post.data.title}</a>
+				<FormattedDate date={post.data.pubDate} />
+			</li>
+		))
+	}
+</ul>
+
+<style>
+	ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	li {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1em;
+		padding: 0.75em 0;
+		border-bottom: 1px solid var(--border);
+	}
+	li a {
+		text-decoration: none;
+	}
+	li a:hover {
+		text-decoration: underline;
+	}
+	li :global(time) {
+		flex-shrink: 0;
+		color: var(--fg-muted);
+		font-size: 0.9em;
+	}
+</style>

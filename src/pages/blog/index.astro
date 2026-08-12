@@ -1,61 +1,24 @@
 ---
 import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
+import PostList from '../../components/PostList.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 import { getPublishedPosts } from '../../utils/posts';
-import { withBase } from '../../utils/url';
 
 const posts = await getPublishedPosts();
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="de">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 	</head>
 	<body>
 		<Header />
 		<main>
-			<ul>
-				{
-					posts.map((post) => (
-						<li>
-							<a href={withBase(`blog/${post.id}/`)}>{post.data.title}</a>
-							<FormattedDate date={post.data.pubDate} />
-						</li>
-					))
-				}
-			</ul>
+			<PostList posts={posts} basePath="blog" />
 		</main>
 		<Footer />
 	</body>
 </html>
-
-<style>
-	ul {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
-	li {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 1em;
-		padding: 0.75em 0;
-		border-bottom: 1px solid var(--border);
-	}
-	li a {
-		text-decoration: none;
-	}
-	li a:hover {
-		text-decoration: underline;
-	}
-	li :global(time) {
-		flex-shrink: 0;
-		color: var(--fg-muted);
-		font-size: 0.9em;
-	}
-</style>

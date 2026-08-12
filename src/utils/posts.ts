@@ -14,3 +14,10 @@ export async function getPublishedPosts(): Promise<PublishedPost[]> {
 	const posts = (await getCollection('blog', ({ data }) => !data.draft)) as PublishedPost[];
 	return posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 }
+
+export type EnPost = CollectionEntry<'blogEn'>;
+
+export async function getEnPosts(): Promise<EnPost[]> {
+	const posts = await getCollection('blogEn');
+	return posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+}

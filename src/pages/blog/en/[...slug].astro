@@ -1,0 +1,32 @@
+---
+import { render } from 'astro:content';
+import BlogPost from '../../../layouts/BlogPost.astro';
+import { getEnPosts } from '../../../utils/posts';
+import { withBase } from '../../../utils/url';
+
+export async function getStaticPaths() {
+	const posts = await getEnPosts();
+	return posts.map((post) => ({
+		params: { slug: post.id },
+		props: post,
+	}));
+}
+
+const post = Astro.props;
+const { Content } = await render(post);
+---
+
+<BlogPost {...post.data} lang="en">
+	<p class="translation-notice">
+		Machine-translated from German —
+		<a href={withBase(`blog/${post.id}/`)}>read the original</a>.
+	</p>
+	<Content />
+</BlogPost>
+
+<style>
+	.translation-notice {
+		color: var(--fg-muted);
+		font-size: 0.9em;
+	}
+</style>

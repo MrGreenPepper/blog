@@ -1,7 +1,8 @@
 ---
 import { render } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
-import { getPublishedPosts, type PublishedPost } from '../../utils/posts';
+import { getEnPosts, getPublishedPosts, type PublishedPost } from '../../utils/posts';
+import { withBase } from '../../utils/url';
 
 export async function getStaticPaths() {
 	const posts = await getPublishedPosts();
@@ -14,8 +15,25 @@ type Props = PublishedPost;
 
 const post = Astro.props;
 const { Content } = await render(post);
+
+const enPosts = await getEnPosts();
+const hasTranslation = enPosts.some((p) => p.id === post.id);
 ---
 
-<BlogPost {...post.data}>
+<BlogPost {...post.data} lang="de">
+	{
+		hasTranslation && (
+			<p class="translation-notice">
+				<a href={withBase(`blog/en/${post.id}/`)}>Read in English →</a>
+			</p>
+		)
+	}
 	<Content />
 </BlogPost>
+
+<style>
+	.translation-notice {
+		color: var(--fg-muted);
+		font-size: 0.9em;
+	}
+</style>
