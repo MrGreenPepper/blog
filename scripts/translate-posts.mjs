@@ -24,6 +24,7 @@ const LANGUAGES = [
 	{ code: 'fr', deeplTarget: 'FR' },
 	{ code: 'ar', deeplTarget: 'AR' },
 	{ code: 'ru', deeplTarget: 'RU' },
+	{ code: 'id', deeplTarget: 'ID' },
 ];
 
 const DEEPL_KEY = process.env.DEEPL_KEY;

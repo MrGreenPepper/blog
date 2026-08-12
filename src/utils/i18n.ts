@@ -10,6 +10,7 @@ export const LANGUAGES = [
 	{ code: 'fr', label: 'Français', flag: '🇫🇷', dir: 'ltr', blog: 'blogFr', pages: 'pagesFr' },
 	{ code: 'ar', label: 'العربية', flag: '🇸🇦', dir: 'rtl', blog: 'blogAr', pages: 'pagesAr' },
 	{ code: 'ru', label: 'Русский', flag: '🇷🇺', dir: 'ltr', blog: 'blogRu', pages: 'pagesRu' },
+	{ code: 'id', label: 'Bahasa Indonesia', flag: '🇮🇩', dir: 'ltr', blog: 'blogId', pages: 'pagesId' },
 ] as const;
 
 export type LangCode = (typeof LANGUAGES)[number]['code'];

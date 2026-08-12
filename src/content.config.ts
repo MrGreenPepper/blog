@@ -81,4 +81,6 @@ export const collections = {
 	pagesAr: translatedPages('./src/content/pages-ar'),
 	blogRu: translatedBlog('./src/content/blog-ru'),
 	pagesRu: translatedPages('./src/content/pages-ru'),
+	blogId: translatedBlog('./src/content/blog-id'),
+	pagesId: translatedPages('./src/content/pages-id'),
 };
