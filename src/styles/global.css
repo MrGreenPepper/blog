@@ -4,6 +4,31 @@
 	--fg-muted: #666666;
 	--border: #e5e5e5;
 	--code-bg: #f4f4f4;
+	color-scheme: light dark;
+}
+
+/* Follows the OS/browser preference until the toggle sets an explicit data-theme */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--bg: #111111;
+		--fg: #f2f2f2;
+		--fg-muted: #999999;
+		--border: #2e2e2e;
+		--code-bg: #1c1c1c;
+	}
+}
+
+:root[data-theme='dark'] {
+	--bg: #111111;
+	--fg: #f2f2f2;
+	--fg-muted: #999999;
+	--border: #2e2e2e;
+	--code-bg: #1c1c1c;
+	color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
 }
 
 * {

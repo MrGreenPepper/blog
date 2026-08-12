@@ -1,0 +1,47 @@
+---
+---
+
+<button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button>
+
+<script is:inline>
+	(function () {
+		const btn = document.getElementById('theme-toggle');
+		const media = window.matchMedia('(prefers-color-scheme: dark)');
+
+		function currentTheme() {
+			return document.documentElement.dataset.theme || (media.matches ? 'dark' : 'light');
+		}
+
+		function sync() {
+			const isDark = currentTheme() === 'dark';
+			btn.textContent = isDark ? 'Light' : 'Dark';
+			btn.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+		}
+
+		sync();
+		media.addEventListener('change', sync);
+
+		btn.addEventListener('click', () => {
+			const next = currentTheme() === 'dark' ? 'light' : 'dark';
+			document.documentElement.dataset.theme = next;
+			localStorage.setItem('theme', next);
+			sync();
+		});
+	})();
+</script>
+
+<style>
+	button {
+		font: inherit;
+		background: none;
+		border: none;
+		padding: 0;
+		color: var(--fg-muted);
+		text-decoration: none;
+		cursor: pointer;
+	}
+	button:hover {
+		color: var(--fg);
+		text-decoration: underline;
+	}
+</style>
