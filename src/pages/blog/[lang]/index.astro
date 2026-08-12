@@ -1,0 +1,41 @@
+---
+import BaseHead from '../../../components/BaseHead.astro';
+import Footer from '../../../components/Footer.astro';
+import Header from '../../../components/Header.astro';
+import PostList from '../../../components/PostList.astro';
+import { SITE_TITLE } from '../../../consts';
+import { findLanguage, LANGUAGES } from '../../../utils/i18n';
+import { getTranslatedPosts } from '../../../utils/posts';
+
+export function getStaticPaths() {
+	return LANGUAGES.map((l) => ({ params: { lang: l.code } }));
+}
+
+const language = findLanguage(Astro.params.lang)!;
+const posts = await getTranslatedPosts(language.blog);
+---
+
+<!doctype html>
+<html lang={language.code} dir={language.dir}>
+	<head>
+		<BaseHead
+			title={`${SITE_TITLE} — ${language.label}`}
+			description={`Machine-translated (${language.label}) versions of the blog posts.`}
+		/>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<p class="notice">Machine-translated from German.</p>
+			<PostList posts={posts} basePath={`blog/${language.code}`} />
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.notice {
+		color: var(--fg-muted);
+		font-size: 0.9em;
+	}
+</style>

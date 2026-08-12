@@ -1,0 +1,48 @@
+---
+import { render } from 'astro:content';
+import LangSwitch from '../../../components/LangSwitch.astro';
+import BlogPost from '../../../layouts/BlogPost.astro';
+import { LANGUAGES } from '../../../utils/i18n';
+import { getTranslatedPosts } from '../../../utils/posts';
+import { withBase } from '../../../utils/url';
+
+export async function getStaticPaths() {
+	const paths = [];
+	for (const language of LANGUAGES) {
+		const posts = await getTranslatedPosts(language.blog);
+		for (const post of posts) {
+			paths.push({ params: { lang: language.code, slug: post.id }, props: { post, language } });
+		}
+	}
+	return paths;
+}
+
+const { post, language } = Astro.props;
+const { Content } = await render(post);
+
+// Which languages (including German) have a translation of this exact post
+const hrefs: Record<string, string> = {
+	de: withBase(`blog/${post.id}/`),
+	[language.code]: withBase(`blog/${language.code}/${post.id}/`),
+};
+for (const other of LANGUAGES) {
+	if (other.code === language.code) continue;
+	const others = await getTranslatedPosts(other.blog);
+	if (others.some((p) => p.id === post.id)) {
+		hrefs[other.code] = withBase(`blog/${other.code}/${post.id}/`);
+	}
+}
+---
+
+<BlogPost {...post.data} lang={language.code} dir={language.dir}>
+	<p class="translation-notice">Machine-translated from German.</p>
+	<LangSwitch current={language.code} hrefs={hrefs} />
+	<Content />
+</BlogPost>
+
+<style>
+	.translation-notice {
+		color: var(--fg-muted);
+		font-size: 0.9em;
+	}
+</style>

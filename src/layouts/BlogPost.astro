@@ -5,12 +5,12 @@ import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import type { PublishedPost } from '../utils/posts';
 
-type Props = PublishedPost['data'] & { lang?: 'de' | 'en' };
+type Props = PublishedPost['data'] & { lang?: string; dir?: 'ltr' | 'rtl' };
 
-const { title, description, pubDate, updatedDate, lang = 'de' } = Astro.props;
+const { title, description, pubDate, updatedDate, lang = 'de', dir = 'ltr' } = Astro.props;
 ---
 
-<html lang={lang}>
+<html lang={lang} dir={dir}>
 	<head>
 		<BaseHead title={title} description={description} />
 	</head>

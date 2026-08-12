@@ -1,7 +1,9 @@
 ---
 import { render } from 'astro:content';
+import LangSwitch from '../../components/LangSwitch.astro';
 import BlogPost from '../../layouts/BlogPost.astro';
-import { getEnPosts, getPublishedPosts, type PublishedPost } from '../../utils/posts';
+import { LANGUAGES } from '../../utils/i18n';
+import { getPublishedPosts, getTranslatedPosts, type PublishedPost } from '../../utils/posts';
 import { withBase } from '../../utils/url';
 
 export async function getStaticPaths() {
@@ -16,24 +18,17 @@ type Props = PublishedPost;
 const post = Astro.props;
 const { Content } = await render(post);
 
-const enPosts = await getEnPosts();
-const hasTranslation = enPosts.some((p) => p.id === post.id);
+const hrefs: Record<string, string> = { de: withBase(`blog/${post.id}/`) };
+for (const language of LANGUAGES) {
+	const translated = await getTranslatedPosts(language.blog);
+	if (translated.some((p) => p.id === post.id)) {
+		hrefs[language.code] = withBase(`blog/${language.code}/${post.id}/`);
+	}
+}
+const hasTranslations = Object.keys(hrefs).length > 1;
 ---
 
 <BlogPost {...post.data} lang="de">
-	{
-		hasTranslation && (
-			<p class="translation-notice">
-				<a href={withBase(`blog/en/${post.id}/`)}>Read in English →</a>
-			</p>
-		)
-	}
+	{hasTranslations && <LangSwitch current="de" hrefs={hrefs} />}
 	<Content />
 </BlogPost>
-
-<style>
-	.translation-notice {
-		color: var(--fg-muted);
-		font-size: 0.9em;
-	}
-</style>

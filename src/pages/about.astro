@@ -1,45 +1,36 @@
 ---
+import { getEntry, render } from 'astro:content';
+import LangSwitch from '../components/LangSwitch.astro';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import { LANGUAGES } from '../utils/i18n';
+import { withBase } from '../utils/url';
+
+const entry = await getEntry('pages', 'about');
+if (!entry) throw new Error('Missing src/content/pages/about.md');
+const { title, description } = entry.data;
+const { Content } = await render(entry);
+
+const hrefs: Record<string, string> = { de: withBase('about') };
+for (const language of LANGUAGES) {
+	const translated = await getEntry(language.pages, 'about');
+	if (translated) hrefs[language.code] = withBase(`blog/${language.code}/about`);
+}
+const hasTranslations = Object.keys(hrefs).length > 1;
 ---
 
 <!doctype html>
 <html lang="de">
 	<head>
-		<BaseHead title="About" description="About me" />
+		<BaseHead title={title} description={description} />
 	</head>
 	<body>
 		<Header />
 		<main>
-			<h1>About</h1>
-			<p>Hallo! Sebastian Trümper mein Name – aber die meisten Gedanken in meinem Kopf haben keinen.</p>
-			<p>
-				Sie tauchen einfach auf. Beim Kaffee, beim Blick auf einen Datensatz, mitten in der Nacht.
-				Warum verhält sich dieser Rechner so? Was würde ein Ökonom zu diesem Alltagsphänomen sagen?
-				Und ist das, was wir alle für selbstverständlich halten, eigentlich wirklich so
-				selbstverständlich? Mein Kopf springt gerne – zwischen Daten und Philosophie, zwischen
-				Wirtschaft und Weltgeschehen. Und ja, manchmal auch einfach zum Wetter. Irgendwo muss man ja
-				landen.
-			</p>
-			<p>
-				Besonders wohl fühle ich mich dort, wo es ein bisschen schräg wird: bei
-				Gedankenexperimenten, die auf den ersten Blick absurd klingen und auf den zweiten plötzlich
-				gar nicht mehr. Und ich gebe es offen zu – wenn in einer Runde alle nicken, juckt es mich in
-				den Fingern. Dann spiele ich den Advocatus Diaboli, nicht aus Streitlust, sondern aus
-				Überzeugung: Eine Idee, die keinem Widerspruch begegnet ist, hat noch nichts bewiesen.
-			</p>
-			<p>
-				Dieser Blog ist mein Notizbuch mit offener Tür. Kein roter Faden, kein Themenplan – dafür
-				echte Neugier. Mal wird es technisch, mal philosophisch, mal wirtschaftlich, mal alles auf
-				einmal. Ich verspreche keine fertigen Antworten. Aber ich verspreche, dass ich die Fragen
-				ernst nehme – auch und gerade die unbequemen.
-			</p>
-			<p>
-				Wenn du also Lust hast, mitzudenken, gegenzudenken oder einfach nur zuzuschauen, wie jemand
-				laut denkt: Herzlich willkommen. Fühl dich eingeladen, die Augenbraue zu heben. Genau dafür
-				ist das hier da.
-			</p>
+			<h1>{title}</h1>
+			{hasTranslations && <LangSwitch current="de" hrefs={hrefs} />}
+			<Content />
 		</main>
 		<Footer />
 	</body>

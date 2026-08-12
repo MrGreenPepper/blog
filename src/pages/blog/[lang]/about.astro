@@ -1,0 +1,58 @@
+---
+import { getEntry, render } from 'astro:content';
+import BaseHead from '../../../components/BaseHead.astro';
+import Footer from '../../../components/Footer.astro';
+import Header from '../../../components/Header.astro';
+import LangSwitch from '../../../components/LangSwitch.astro';
+import { findLanguage, LANGUAGES } from '../../../utils/i18n';
+import { withBase } from '../../../utils/url';
+
+export async function getStaticPaths() {
+	const paths = [];
+	for (const language of LANGUAGES) {
+		const entry = await getEntry(language.pages, 'about');
+		if (entry) paths.push({ params: { lang: language.code }, props: { language } });
+	}
+	return paths;
+}
+
+const { language } = Astro.props as { language: (typeof LANGUAGES)[number] };
+const entry = await getEntry(language.pages, 'about');
+if (!entry) throw new Error(`Missing translated About for ${language.code}`);
+const { title, description } = entry.data;
+const { Content } = await render(entry);
+
+const hrefs: Record<string, string> = {
+	de: withBase('about'),
+	[language.code]: withBase(`blog/${language.code}/about`),
+};
+for (const other of LANGUAGES) {
+	if (other.code === language.code) continue;
+	const translated = await getEntry(other.pages, 'about');
+	if (translated) hrefs[other.code] = withBase(`blog/${other.code}/about`);
+}
+---
+
+<!doctype html>
+<html lang={language.code} dir={language.dir}>
+	<head>
+		<BaseHead title={title} description={description} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>{title}</h1>
+			<p class="translation-notice">Machine-translated from German.</p>
+			<LangSwitch current={language.code} hrefs={hrefs} />
+			<Content />
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.translation-notice {
+		color: var(--fg-muted);
+		font-size: 0.9em;
+	}
+</style>
