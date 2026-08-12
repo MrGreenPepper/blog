@@ -3,7 +3,7 @@ import { SITE_TITLE } from '../consts';
 import { currentLangFromPath, LANGUAGES, type LangCode } from '../utils/i18n';
 import { withBase } from '../utils/url';
 import HeaderLink from './HeaderLink.astro';
-import LangSwitch from './LangSwitch.astro';
+import LangPicker from './LangPicker.astro';
 import ThemeToggle from './ThemeToggle.astro';
 
 interface Props {
@@ -34,10 +34,8 @@ const hrefs = {
 		<div class="internal-links" id="nav-links">
 			<HeaderLink href={withBase('blog')}>Blog</HeaderLink>
 			<HeaderLink href={withBase('about')}>About</HeaderLink>
-			<div class="lang-theme">
-				<LangSwitch current={current} hrefs={hrefs} />
-				<ThemeToggle />
-			</div>
+			<LangPicker current={current} hrefs={hrefs} />
+			<ThemeToggle />
 		</div>
 	</nav>
 </header>
@@ -71,6 +69,7 @@ const hrefs = {
 	.site-title {
 		font-weight: 600;
 		text-decoration: none;
+		white-space: nowrap;
 	}
 	.nav-toggle {
 		display: none;
@@ -87,7 +86,9 @@ const hrefs = {
 		display: flex;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 1.5em;
+		justify-content: flex-end;
+		gap: 1.25em;
+		flex: 1;
 	}
 	.internal-links a {
 		text-decoration: none;
@@ -95,13 +96,6 @@ const hrefs = {
 	}
 	.internal-links a.active {
 		color: var(--fg);
-	}
-	.lang-theme {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.75em;
-		margin-inline-start: 0.75em;
 	}
 
 	@media (max-width: 720px) {
@@ -131,12 +125,6 @@ const hrefs = {
 		}
 		.internal-links.open {
 			display: flex;
-		}
-		.lang-theme {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.75em;
-			margin-inline-start: 0;
 		}
 	}
 </style>
