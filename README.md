@@ -1,10 +1,23 @@
-# Astro Starter Kit: Blog
+# MrGreenPepper's Blog
 
-```sh
-npm create astro@latest -- --template blog
-```
+Personal blog built with [Astro](https://astro.build), deployed to GitHub Pages at
+https://MrGreenPepper.github.io/blog
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## 🚀 Deploy to GitHub Pages
+
+1. Create a GitHub repo named `blog` under your account and push this project to it:
+
+   ```sh
+   git remote add origin https://github.com/MrGreenPepper/blog.git
+   git push -u origin main
+   ```
+
+2. In the repo, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
+3. Every push to `main` triggers `.github/workflows/deploy.yml`, which builds the site
+   and publishes it to GitHub Pages automatically.
+
+If you rename the repo or use a different GitHub username, update `site` and `base` in
+[`astro.config.mjs`](./astro.config.mjs) to match.
 
 Features:
 
