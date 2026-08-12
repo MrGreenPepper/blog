@@ -11,8 +11,10 @@ import ThemeToggle from './ThemeToggle.astro';
 		<div class="internal-links">
 			<HeaderLink href={withBase('blog')}>Blog</HeaderLink>
 			<HeaderLink href={withBase('about')}>About</HeaderLink>
-			<HeaderLink href={withBase('blog/en')}>EN</HeaderLink>
-			<ThemeToggle />
+			<div class="lang-theme">
+				<HeaderLink href={withBase('blog/en')}>EN</HeaderLink>
+				<ThemeToggle />
+			</div>
 		</div>
 	</nav>
 </header>
@@ -43,5 +45,10 @@ import ThemeToggle from './ThemeToggle.astro';
 	}
 	.internal-links a.active {
 		color: var(--fg);
+	}
+	.lang-theme {
+		display: flex;
+		align-items: center;
+		margin-left: 0.75em;
 	}
 </style>
