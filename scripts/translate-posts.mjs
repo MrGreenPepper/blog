@@ -1,22 +1,29 @@
 #!/usr/bin/env node
-// Translates published German posts in src/content/blog into English versions
-// under src/content/blog-en, using the OpenAI API. Run in CI on every push to
-// main, before the site is built, so new/changed posts get an English
-// counterpart automatically.
+// Translates published German content (blog posts + static pages) into each
+// language in LANGUAGES below, using the OpenAI API. Run in CI on every push
+// to main, before the site is built.
 //
-// A post keeps its English translation up to date via a content hash stored
-// in the translated file's frontmatter (sourceHash) — it's only retranslated
-// when the German source actually changes. Drafts (`draft: true`) and posts
-// with `translate: false` in their frontmatter are skipped. English files
-// whose German source was deleted are removed.
+// A translation stays in sync via a content hash stored in its frontmatter
+// (sourceHash) — a file is only retranslated when its German source
+// actually changes. Blog drafts (`draft: true`) and anything with
+// `translate: false` in its frontmatter are skipped. Translated files whose
+// German source was deleted are removed.
 
 import { createHash } from 'node:crypto';
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 
-const DE_DIR = 'src/content/blog';
-const EN_DIR = 'src/content/blog-en';
+// Keep in sync with src/utils/i18n.ts's LANGUAGES list.
+const LANGUAGES = [
+	{ code: 'en', name: 'English' },
+	{ code: 'zh', name: 'Mandarin Chinese (Simplified script)' },
+	{ code: 'hi', name: 'Hindi' },
+	{ code: 'es', name: 'Spanish' },
+	{ code: 'fr', name: 'French' },
+	{ code: 'ar', name: 'Modern Standard Arabic' },
+	{ code: 'ru', name: 'Russian' },
+];
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
@@ -25,7 +32,7 @@ function hashContent(raw) {
 	return createHash('sha256').update(raw).digest('hex').slice(0, 16);
 }
 
-async function translate(title, description, body) {
+async function translate(languageName, title, description, body) {
 	const res = await fetch('https://api.openai.com/v1/chat/completions', {
 		method: 'POST',
 		headers: {
@@ -39,11 +46,11 @@ async function translate(title, description, body) {
 				{
 					role: 'system',
 					content:
-						'You translate blog posts from German to English for a personal tech blog. ' +
-						'Keep the tone natural and informal, matching the source. Preserve Markdown ' +
-						'syntax, code blocks, and links exactly as-is — translate only prose. Respond ' +
-						'with strict JSON of the shape {"title": string, "description": string, "body": string} ' +
-						'and nothing else.',
+						`You translate blog content from German to ${languageName} for a personal ` +
+						'tech blog. Keep the tone natural and informal, matching the source. Preserve ' +
+						'Markdown syntax, code blocks, and links exactly as-is — translate only prose. ' +
+						'Respond with strict JSON of the shape ' +
+						'{"title": string, "description": string, "body": string} and nothing else.',
 				},
 				{ role: 'user', content: JSON.stringify({ title, description, body }) },
 			],
@@ -64,61 +71,73 @@ async function translate(title, description, body) {
 	return result;
 }
 
-async function main() {
-	if (!OPENAI_API_KEY) {
-		console.log('OPENAI_API_KEY is not set — skipping translation.');
-		return;
-	}
+// srcDir/destDirFor are content directories (e.g. src/content/blog and a
+// function returning src/content/blog-<lang>). withDates controls whether
+// pubDate/updatedDate are carried over (blog posts have them, static pages
+// don't).
+async function syncLanguage(lang, srcDir, destDirFor, { withDates }) {
+	const destDir = destDirFor(lang.code);
+	await mkdir(destDir, { recursive: true });
 
-	await mkdir(EN_DIR, { recursive: true });
-
-	const files = (await readdir(DE_DIR)).filter((f) => /\.(md|mdx)$/.test(f));
+	const files = (await readdir(srcDir)).filter((f) => /\.(md|mdx)$/.test(f));
 	const sourceSlugs = new Set();
 	let changed = false;
 
 	for (const file of files) {
-		const slug = file.replace(/\.(md|mdx)$/, '');
-		sourceSlugs.add(slug);
+		sourceSlugs.add(file.replace(/\.(md|mdx)$/, ''));
 
-		const raw = await readFile(path.join(DE_DIR, file), 'utf-8');
+		const raw = await readFile(path.join(srcDir, file), 'utf-8');
 		const parsed = matter(raw);
 
 		if (parsed.data.draft) continue;
 		if (parsed.data.translate === false) continue;
 
 		const sourceHash = hashContent(raw);
-		const enPath = path.join(EN_DIR, file);
+		const destPath = path.join(destDir, file);
 
 		let existingHash;
 		try {
-			existingHash = matter(await readFile(enPath, 'utf-8')).data.sourceHash;
+			existingHash = matter(await readFile(destPath, 'utf-8')).data.sourceHash;
 		} catch {
 			// no existing translation yet
 		}
 		if (existingHash === sourceHash) continue;
 
-		console.log(`Translating ${file}...`);
-		const translated = await translate(parsed.data.title, parsed.data.description, parsed.content);
+		console.log(`Translating ${srcDir}/${file} -> ${lang.code}...`);
+		const translated = await translate(lang.name, parsed.data.title, parsed.data.description, parsed.content);
 
-		const out = matter.stringify(`${translated.body.trim()}\n`, {
+		const frontmatter = {
 			title: translated.title,
 			description: translated.description,
-			pubDate: parsed.data.pubDate,
-			...(parsed.data.updatedDate ? { updatedDate: parsed.data.updatedDate } : {}),
+			...(withDates ? { pubDate: parsed.data.pubDate } : {}),
+			...(withDates && parsed.data.updatedDate ? { updatedDate: parsed.data.updatedDate } : {}),
 			sourceHash,
-		});
-
-		await writeFile(enPath, out);
+		};
+		await writeFile(destPath, matter.stringify(`${translated.body.trim()}\n`, frontmatter));
 		changed = true;
 	}
 
-	const enFiles = (await readdir(EN_DIR)).filter((f) => /\.(md|mdx)$/.test(f));
-	for (const file of enFiles) {
-		const slug = file.replace(/\.(md|mdx)$/, '');
-		if (!sourceSlugs.has(slug)) {
-			await unlink(path.join(EN_DIR, file));
+	const destFiles = (await readdir(destDir)).filter((f) => /\.(md|mdx)$/.test(f));
+	for (const file of destFiles) {
+		if (!sourceSlugs.has(file.replace(/\.(md|mdx)$/, ''))) {
+			await unlink(path.join(destDir, file));
 			changed = true;
 		}
+	}
+
+	return changed;
+}
+
+async function main() {
+	if (!OPENAI_API_KEY) {
+		console.log('OPENAI_API_KEY is not set — skipping translation.');
+		return;
+	}
+
+	let changed = false;
+	for (const lang of LANGUAGES) {
+		changed = (await syncLanguage(lang, 'src/content/blog', (c) => `src/content/blog-${c}`, { withDates: true })) || changed;
+		changed = (await syncLanguage(lang, 'src/content/pages', (c) => `src/content/pages-${c}`, { withDates: false })) || changed;
 	}
 
 	console.log(changed ? 'Translations updated.' : 'Translations already up to date.');
