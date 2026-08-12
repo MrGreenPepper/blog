@@ -1,4 +1,5 @@
 ---
+draft: true
 title: 'AI Valuation'
 description: 'Notiz zu den Grenzen von KI'
 pubDate: 'Aug 12 2026'
