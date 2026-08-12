@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Translates published German content (blog posts + static pages) into each
-// language in LANGUAGES below, using the OpenAI API. Run in CI on every push
+// language in LANGUAGES below, using the DeepL API. Run in CI on every push
 // to main, before the site is built.
 //
 // A translation stays in sync via a content hash stored in its frontmatter
@@ -14,61 +14,53 @@ import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 
-// Keep in sync with src/utils/i18n.ts's LANGUAGES list.
+// `code` must match src/utils/i18n.ts's LANGUAGES list. `deeplTarget` is
+// DeepL's target_lang code for that language.
 const LANGUAGES = [
-	{ code: 'en', name: 'English' },
-	{ code: 'zh', name: 'Mandarin Chinese (Simplified script)' },
-	{ code: 'hi', name: 'Hindi' },
-	{ code: 'es', name: 'Spanish' },
-	{ code: 'fr', name: 'French' },
-	{ code: 'ar', name: 'Modern Standard Arabic' },
-	{ code: 'ru', name: 'Russian' },
+	{ code: 'en', deeplTarget: 'EN-US' },
+	{ code: 'zh', deeplTarget: 'ZH' },
+	{ code: 'hi', deeplTarget: 'HI' },
+	{ code: 'es', deeplTarget: 'ES' },
+	{ code: 'fr', deeplTarget: 'FR' },
+	{ code: 'ar', deeplTarget: 'AR' },
+	{ code: 'ru', deeplTarget: 'RU' },
 ];
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const DEEPL_KEY = process.env.DEEPL_KEY;
+// Free-tier keys are suffixed ":fx" and use a different API host than paid keys.
+const DEEPL_API_URL = DEEPL_KEY?.endsWith(':fx')
+	? 'https://api-free.deepl.com/v2/translate'
+	: 'https://api.deepl.com/v2/translate';
 
 function hashContent(raw) {
 	return createHash('sha256').update(raw).digest('hex').slice(0, 16);
 }
 
-async function translate(languageName, title, description, body) {
-	const res = await fetch('https://api.openai.com/v1/chat/completions', {
+async function translate(deeplTarget, title, description, body) {
+	const res = await fetch(DEEPL_API_URL, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			Authorization: `Bearer ${OPENAI_API_KEY}`,
+			Authorization: `DeepL-Auth-Key ${DEEPL_KEY}`,
 		},
 		body: JSON.stringify({
-			model: OPENAI_MODEL,
-			response_format: { type: 'json_object' },
-			messages: [
-				{
-					role: 'system',
-					content:
-						`You translate blog content from German to ${languageName} for a personal ` +
-						'tech blog. Keep the tone natural and informal, matching the source. Preserve ' +
-						'Markdown syntax, code blocks, and links exactly as-is — translate only prose. ' +
-						'Respond with strict JSON of the shape ' +
-						'{"title": string, "description": string, "body": string} and nothing else.',
-				},
-				{ role: 'user', content: JSON.stringify({ title, description, body }) },
-			],
+			text: [title, description, body],
+			source_lang: 'DE',
+			target_lang: deeplTarget,
+			preserve_formatting: true,
 		}),
 	});
 
 	if (!res.ok) {
-		throw new Error(`OpenAI request failed: ${res.status} ${await res.text()}`);
+		throw new Error(`DeepL request failed: ${res.status} ${await res.text()}`);
 	}
 
 	const data = await res.json();
-	const result = JSON.parse(data.choices[0].message.content);
-	for (const field of ['title', 'description', 'body']) {
-		if (typeof result[field] !== 'string' || !result[field].trim()) {
-			throw new Error(`Translation response missing "${field}"`);
-		}
+	const [translatedTitle, translatedDescription, translatedBody] = data.translations.map((t) => t.text);
+	if (!translatedTitle || !translatedDescription || !translatedBody) {
+		throw new Error('DeepL response missing a translated field');
 	}
-	return result;
+	return { title: translatedTitle, description: translatedDescription, body: translatedBody };
 }
 
 // srcDir/destDirFor are content directories (e.g. src/content/blog and a
@@ -106,10 +98,11 @@ async function syncLanguage(lang, srcDir, destDirFor, { withDates }) {
 		console.log(`Translating ${srcDir}/${file} -> ${lang.code}...`);
 		let translated;
 		try {
-			translated = await translate(lang.name, parsed.data.title, parsed.data.description, parsed.content);
+			translated = await translate(lang.deeplTarget, parsed.data.title, parsed.data.description, parsed.content);
 		} catch (err) {
-			// A translation failure (billing, rate limit, a flaky response) must
-			// never take the whole site down with it — skip this file and move on.
+			// A translation failure (billing, rate limit, an unsupported
+			// language) must never take the whole site down with it — skip
+			// this file and move on.
 			console.error(`Skipping ${srcDir}/${file} -> ${lang.code}: ${err.message}`);
 			continue;
 		}
@@ -137,8 +130,8 @@ async function syncLanguage(lang, srcDir, destDirFor, { withDates }) {
 }
 
 async function main() {
-	if (!OPENAI_API_KEY) {
-		console.log('OPENAI_API_KEY is not set — skipping translation.');
+	if (!DEEPL_KEY) {
+		console.log('DEEPL_KEY is not set — skipping translation.');
 		return;
 	}
 

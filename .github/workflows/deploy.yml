@@ -29,7 +29,7 @@ jobs:
 
       - name: Translate new/changed content
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEEPL_KEY: ${{ secrets.DEEPL_KEY }}
         run: node scripts/translate-posts.mjs
 
       - name: Commit translations
